@@ -1,0 +1,18 @@
+{
+  "mae": 3.9756161749473735,
+  "rmse": 8.051455441876595,
+  "r2": 0.5685460929720922,
+  "within_20_percent": 31.928213689482472,
+  "human_baseline_mae": 5.496469115191987,
+  "improvement_over_human_percent": 27.669634966947164,
+  "training_samples": 9581,
+  "test_samples": 2396,
+  "feature_importance": {
+    "HoursEstimate": 67.77419416152584,
+    "Priority": 7.135408034521584,
+    "Category": 1.9179099079525055,
+    "SubCategory": 10.312744300865653,
+    "ProjectCode": 12.859743595134415
+  },
+  "model_version": "1.0.0"
+}
