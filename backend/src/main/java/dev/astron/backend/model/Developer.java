@@ -1,5 +1,6 @@
 package dev.astron.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -20,6 +21,7 @@ public class Developer {
     // their own separate "id" field (like "dev-001") that we want to
     // keep as a normal, plain field below.
     @Id
+    @JsonIgnore
     private String mongoId;
 
     private String id;
