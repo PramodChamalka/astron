@@ -49,6 +49,9 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 // Login and register must stay open with no token.
                 .requestMatchers("/api/auth/**").permitAll()
+                // The public landing page shows marketing stats before
+                // anyone logs in, so this one must stay open too.
+                .requestMatchers("/api/dashboard/landing-stats").permitAll()
                 // Only Admins can manage users.
                 .requestMatchers("/api/users/**").hasRole("Admin")
                 // Only Admins/Managers can create assignments or tasks.
