@@ -126,6 +126,41 @@ public class AssignmentController {
         return ResponseEntity.ok(Map.of("success", true, "data", a));
     }
 
+    // GET /api/assignments/hitl/{taskId}
+    // Real task info for the HITL approval desk. The AI's top-ranked
+    // developer pick and its reasons come from Flask's /recommend
+    // endpoint (already called separately by the frontend) - not
+    // duplicated here, since that's the real source of MCDM scoring.
+    @GetMapping("/hitl/{taskId}")
+    public ResponseEntity<?> getHitlDetail(@PathVariable String taskId) {
+        Task task = taskRepo.findByTaskId(taskId);
+        if (task == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                "success", false, "error", "Task not found"));
+        }
+
+        Map<String,Object> taskInfo = new LinkedHashMap<>();
+        taskInfo.put("id", task.getId());
+        taskInfo.put("title", task.getTitle());
+        taskInfo.put("category", task.getCategory());
+        taskInfo.put("predicted_hours", task.getPredictedHours());
+        taskInfo.put("complexity", task.getComplexity());
+        taskInfo.put("created_at", task.getCreatedAt());
+
+        // The real, fixed weights mcdm.py uses (see score_developer()):
+        // skill 40%, workload/burnout 35%, experience 25%.
+        Map<String,Object> weights = new LinkedHashMap<>();
+        weights.put("skill", 40);
+        weights.put("workload", 35);
+        weights.put("experience", 25);
+
+        Map<String,Object> data = new LinkedHashMap<>();
+        data.put("task", taskInfo);
+        data.put("mcdm_weights", weights);
+
+        return ResponseEntity.ok(Map.of("success", true, "data", data));
+    }
+
     // Stats for the assignment history page
     @GetMapping("/stats")
     public Map<String,Object> stats() {
