@@ -3,6 +3,8 @@ package dev.astron.backend.controller;
 import dev.astron.backend.model.Developer;
 import dev.astron.backend.repository.DeveloperRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -33,5 +35,23 @@ public class DeveloperController {
         // Map.of(...) builds a small JSON-like response:
         // { "success": true, "data": [ ...developers... ] }
         return Map.of("success", true, "data", devs);
+    }
+
+    // GET /api/developers/me - the logged-in developer's OWN profile.
+    // Same email -> Developer resolution as TaskController's /tasks/my:
+    // JwtAuthFilter puts the token's "sub" claim (the user's EMAIL) in
+    // as the principal, and Developer records aren't linked to User
+    // accounts by id anywhere in this app, so email is the only field
+    // they share. No match just means this account isn't linked to a
+    // seeded developer record - a real gap, not something to guess at.
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(Authentication authentication) {
+        Developer dev = repo.findByEmail(authentication.getName());
+        if (dev == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                "success", false,
+                "error", "No developer profile is linked to this account"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "data", dev));
     }
 }
