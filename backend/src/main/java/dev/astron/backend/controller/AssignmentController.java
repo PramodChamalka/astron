@@ -154,6 +154,7 @@ public class AssignmentController {
         taskInfo.put("category", task.getCategory());
         taskInfo.put("predicted_hours", task.getPredictedHours());
         taskInfo.put("complexity", task.getComplexity());
+        taskInfo.put("complexity_level", task.getComplexityLevel());
         taskInfo.put("created_at", task.getCreatedAt());
 
         // The real, fixed weights mcdm.py uses (see score_developer()):

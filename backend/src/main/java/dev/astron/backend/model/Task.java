@@ -21,6 +21,16 @@ public class Task {
     private String category;
     private String priority;        // Low | Normal | High | Urgent
     private Integer complexity;
+
+    // The band (Low/Medium/High/Very High) Flask's complexity.py derives
+    // from the RAW, unrounded score - never re-derive this from the
+    // rounded "complexity" integer above, since that can land on the
+    // wrong side of a band boundary (e.g. a raw score of 7.6 is "Low",
+    // but Math.round(7.6) = 8 would wrongly re-bucket as "Medium").
+    @Field("complexity_level")
+    @JsonProperty("complexity_level")
+    private String complexityLevel;
+
     private String status;          // To Do | In Progress | In Review | Completed | Blocked
     private String deadline;
 
