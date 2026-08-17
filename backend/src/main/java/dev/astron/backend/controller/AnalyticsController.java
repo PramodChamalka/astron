@@ -5,11 +5,16 @@ import dev.astron.backend.model.Task;
 import dev.astron.backend.repository.DeveloperRepository;
 import dev.astron.backend.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -23,23 +28,32 @@ public class AnalyticsController {
     @Autowired private TaskRepository taskRepo;
     @Autowired private DeveloperRepository devRepo;
 
-    // Real, fixed facts about the trained Random Forest model itself
-    // (see ml/train.py and ml/artifacts/evaluation.json) - not per-task
-    // data, since a Task only ever stores its own predicted_hours.
-    private static final Map<String, Double> FEATURE_IMPORTANCE = Map.of(
-        "HoursEstimate", 67.8,
-        "ProjectCode", 12.9,
-        "SubCategory", 10.3,
-        "Priority", 7.1,
-        "Category", 1.9
-    );
+    @Value("${astron.flask.uri}")
+    private String flaskUri;
+
+    private final RestClient restClient = RestClient.create();
+
+    // n_estimators is a fixed training hyperparameter (ml/train.py),
+    // not a data-derived metric like MAE or feature_importance - it
+    // can't silently drift on retrain the way those can, since it's
+    // set by the training code itself rather than measured from data.
+    // There's also no standalone Flask endpoint that reports it (it's
+    // only echoed back per-prediction in ml/predict.py), so unlike
+    // training_samples/feature_importance below, there's no live
+    // "model metadata" source to defer to here.
+    private static final int ESTIMATOR_TREES = 200;
 
     // GET /api/analytics/predictions?task_id=TASK-101
-    // Returns the REAL stored prediction for one task. There is no
-    // per-task confidence/feature-breakdown stored anywhere, so we
-    // only return what genuinely exists.
+    // Returns the REAL stored prediction for one task, plus the REAL
+    // model-wide training_samples/feature_importance pulled live from
+    // Flask's /api/model-evaluation (which itself reads
+    // ml/artifacts/evaluation.json) - not hardcoded constants that
+    // would silently go stale the next time the model is retrained.
     @GetMapping("/predictions")
-    public ResponseEntity<?> getPrediction(@RequestParam("task_id") String taskId) {
+    public ResponseEntity<?> getPrediction(
+            @RequestParam("task_id") String taskId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+
         Task task = taskRepo.findByTaskId(taskId);
         if (task == null) {
             return ResponseEntity.status(404).body(Map.of(
@@ -53,11 +67,50 @@ public class AnalyticsController {
         data.put("predicted_hours", task.getPredictedHours());
         data.put("actual_hours", task.getActualHours());
         data.put("algorithm", "Random Forest Regression");
-        data.put("estimator_trees", 200);
-        data.put("training_samples", 9581);
-        data.put("feature_importance", FEATURE_IMPORTANCE);
+        data.put("estimator_trees", ESTIMATOR_TREES);
+
+        Map<String,Object> evaluation = fetchModelEvaluation(authorization);
+        if (evaluation != null) {
+            data.put("training_samples", evaluation.get("training_samples"));
+            data.put("feature_importance", evaluation.get("feature_importance"));
+        } else {
+            // Flask is unreachable or returned something unusable - say
+            // so explicitly rather than silently falling back to old
+            // hardcoded numbers that may no longer match the real model.
+            data.put("training_samples", null);
+            data.put("feature_importance", null);
+            data.put("model_metadata_stale", true);
+            data.put("model_metadata_error",
+                "Could not reach the model evaluation service for live training stats");
+        }
 
         return ResponseEntity.ok(Map.of("success", true, "data", data));
+    }
+
+    // Calls the SAME endpoint the frontend already trusts directly
+    // (see api.js getModelEvaluation) - forwards the caller's own JWT,
+    // since Flask's token_required only checks the signature against
+    // the same shared secret (see JwtUtil), not who the user is.
+    // Returns null on any failure so the caller can label the response
+    // as stale instead of guessing at a fallback value.
+    @SuppressWarnings("unchecked")
+    private Map<String,Object> fetchModelEvaluation(String authorization) {
+        try {
+            Map<String,Object> body = restClient.get()
+                .uri(flaskUri + "/model-evaluation")
+                .headers(h -> {
+                    if (authorization != null) h.set(HttpHeaders.AUTHORIZATION, authorization);
+                })
+                .retrieve()
+                .body(Map.class);
+
+            if (body == null || !Boolean.TRUE.equals(body.get("success"))) {
+                return null;
+            }
+            return (Map<String,Object>) body.get("data");
+        } catch (RestClientException | ClassCastException e) {
+            return null;
+        }
     }
 
     // GET /api/analytics/workload - team-wide workload numbers computed

@@ -24,10 +24,10 @@ public class AuthController {
     // the sidebar. It is UX only - the server still checks roles itself.
     private static final Map<String, List<String>> PERMISSIONS = Map.of(
         "Admin", List.of("dashboard","new-task","developer-pool","ai-predictions",
-            "mcdm","hitl","workload","assignments","all-tasks","reports",
-            "settings","user-management"),
+            "mcdm","hitl","workload","assignments","all-tasks","projects",
+            "reports","settings","user-management"),
         "Manager", List.of("dashboard","new-task","developer-pool","mcdm",
-            "hitl","assignments","workload","all-tasks"),
+            "hitl","assignments","workload","all-tasks","projects"),
         "Developer", List.of("dashboard","workload","assignments","all-tasks"),
         "Viewer", List.of("dashboard","developer-pool","workload","all-tasks")
     );

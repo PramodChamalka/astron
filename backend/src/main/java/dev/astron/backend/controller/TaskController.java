@@ -1,11 +1,15 @@
 package dev.astron.backend.controller;
 
 import dev.astron.backend.model.Developer;
+import dev.astron.backend.model.Project;
 import dev.astron.backend.model.Task;
 import dev.astron.backend.repository.DeveloperRepository;
+import dev.astron.backend.repository.ProjectRepository;
 import dev.astron.backend.repository.TaskRepository;
+import dev.astron.backend.util.IdSequence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -17,11 +21,30 @@ public class TaskController {
 
     @Autowired private TaskRepository taskRepo;
     @Autowired private DeveloperRepository devRepo;
+    @Autowired private ProjectRepository projectRepo;
+    @Autowired private IdSequence idSequence;
 
     // GET /api/tasks - all tasks
     @GetMapping
     public Map<String,Object> getAll() {
         return Map.of("success", true, "data", taskRepo.findAll());
+    }
+
+    // GET /api/tasks/my - tasks assigned to the logged-in developer
+    // JwtAuthFilter puts the token's "sub" claim (the user's EMAIL) in as
+    // the principal, same as ProjectController's currentUserId. Developer
+    // records aren't linked to User accounts by id anywhere in this app -
+    // the only field they share is email, so that's what we match on.
+    // No matching Developer (e.g. an Admin/Manager account, or a Developer
+    // whose email doesn't line up with a seeded Developer record) just
+    // means no assigned tasks, not an error.
+    @GetMapping("/my")
+    public Map<String,Object> getMyTasks(Authentication authentication) {
+        Developer dev = devRepo.findByEmail(authentication.getName());
+        if (dev == null) {
+            return Map.of("success", true, "data", List.of());
+        }
+        return Map.of("success", true, "data", taskRepo.findByAssignedTo(dev.getId()));
     }
 
     // POST /api/tasks - create a task
@@ -37,10 +60,33 @@ public class TaskController {
                 "success", false, "error", "Title is required"));
         }
 
+        // Every task must belong to a project - there is no "loose" task.
+        if (body.getProjectId() == null || body.getProjectId().isBlank()) {
+            return ResponseEntity.status(400).body(Map.of(
+                "success", false, "error", "A project is required"));
+        }
+
+        // findByProjectId matches our own "id" field ("proj-a1b2c3d4"),
+        // not MongoDB's _id - same pattern as findByTaskId below.
+        Project project = projectRepo.findByProjectId(body.getProjectId());
+        if (project == null) {
+            return ResponseEntity.status(404).body(Map.of(
+                "success", false, "error", "Project not found"));
+        }
+
+        // Copy the display fields in from the project itself, so the
+        // client can't send a code or name that disagrees with it.
+        body.setProjectCode(project.getCode());
+        body.setProjectName(project.getName());
+
         // Build a friendly task id like "TASK-101", "TASK-102", ...
-        // by counting how many tasks already exist.
-        long count = taskRepo.count();
-        body.setId("TASK-" + (101 + count));
+        // Counting documents here would reuse the id of a deleted task
+        // and collide with assignment/audit records that still name it,
+        // so IdSequence keeps a high-water mark that only moves up.
+        List<String> issuedIds = taskRepo.findAll().stream()
+            .map(Task::getId)
+            .toList();
+        body.setId("TASK-" + idSequence.next("tasks", issuedIds, "TASK-", 101));
 
         // A brand-new task always starts in these default states,
         // no matter what the frontend sent us.
@@ -90,8 +136,12 @@ public class TaskController {
                 // The value arrives as a generic Object (from JSON),
                 // so we convert it to text first, then parse it as
                 // a Double, whether the frontend sent a number or a string.
-                task.setActualHours(
-                    Double.valueOf(body.get("actual_hours").toString()));
+                double actualHours = Double.valueOf(body.get("actual_hours").toString());
+                if (actualHours < 0) {
+                    return ResponseEntity.status(400).body(Map.of(
+                        "success", false, "error", "actual_hours cannot be negative"));
+                }
+                task.setActualHours(actualHours);
             }
             task.setCompletedAt(LocalDateTime.now().toString());
             taskRepo.save(task);

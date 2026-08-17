@@ -37,6 +37,21 @@ public class Task {
     @JsonProperty("actual_hours")
     private Double actualHours;
 
+    // Every task belongs to a project. The code and name are copied in
+    // alongside the id so lists and tables can show them without a
+    // second lookup - the same reason Assignment stores developer_name.
+    @Field("project_id")
+    @JsonProperty("project_id")
+    private String projectId;       // proj-a1b2c3d4
+
+    @Field("project_code")
+    @JsonProperty("project_code")
+    private String projectCode;     // PC21
+
+    @Field("project_name")
+    @JsonProperty("project_name")
+    private String projectName;
+
     @Field("assigned_to")
     @JsonProperty("assigned_to")
     private String assignedTo;      // dev-001

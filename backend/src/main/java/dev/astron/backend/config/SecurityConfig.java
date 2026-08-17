@@ -59,6 +59,11 @@ public class SecurityConfig {
                     .hasAnyRole("Admin", "Manager")
                 .requestMatchers(HttpMethod.POST, "/api/tasks/**")
                     .hasAnyRole("Admin", "Manager")
+                // Creating a project is the same kind of decision as
+                // creating a task, so it gets the same restriction.
+                // Reading projects stays open to any authenticated user.
+                .requestMatchers(HttpMethod.POST, "/api/projects/**")
+                    .hasAnyRole("Admin", "Manager")
                 // Everything else under /api/ just needs a valid token.
                 .requestMatchers("/api/**").authenticated()
                 // Anything not covered above is refused outright.

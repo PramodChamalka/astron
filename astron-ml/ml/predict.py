@@ -16,6 +16,8 @@ import joblib
 import numpy as np
 from dotenv import load_dotenv
 
+from complexity import compute_complexity
+
 # Read variables from a .env file (if one exists) into the environment.
 load_dotenv()
 
@@ -175,9 +177,19 @@ class ModelPredictor:
         high = predicted_hours + 1.96 * std
 
         # ---------------------------------------------------------
-        # Step 8: Return everything the frontend needs, in one dict.
+        # Step 8: Derive the task's complexity level.
+        # This uses the SAME resolved values the model just predicted
+        # from (including any defaults applied in Step 1), so the
+        # complexity always describes the task the model actually saw.
+        # See complexity.py for the formula and its thresholds.
+        # ---------------------------------------------------------
+        complexity = compute_complexity(hours_estimate, priority_numeric)
+
+        # ---------------------------------------------------------
+        # Step 9: Return everything the frontend needs, in one dict.
         # ---------------------------------------------------------
         return {
+            **complexity,
             "predicted_hours": round(predicted_hours, 1),
             "confidence_interval": {
                 "low": round(low, 1),

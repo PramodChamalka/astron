@@ -15,4 +15,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DeveloperRepository
         extends MongoRepository<Developer, String> {
+
+    Developer findByEmail(String email);
 }

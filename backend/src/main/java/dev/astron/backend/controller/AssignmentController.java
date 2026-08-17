@@ -2,6 +2,7 @@ package dev.astron.backend.controller;
 
 import dev.astron.backend.model.*;
 import dev.astron.backend.repository.*;
+import dev.astron.backend.util.IdSequence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ public class AssignmentController {
     @Autowired private AssignmentRepository asgRepo;
     @Autowired private TaskRepository taskRepo;
     @Autowired private DeveloperRepository devRepo;
+    @Autowired private IdSequence idSequence;
 
     @GetMapping
     public Map<String,Object> getAll() {
@@ -66,9 +68,16 @@ public class AssignmentController {
 
         // 1. Save the assignment record
         // Build a friendly id like "ASG-001", "ASG-002", ...
-        long count = asgRepo.count();
+        // Same rule as task ids: counting would reissue the id of a
+        // deleted assignment, and these records ARE the HITL audit
+        // trail, so a reused id would corrupt exactly what they exist
+        // to prove. IdSequence keeps a high-water mark that only rises.
+        List<String> issuedIds = asgRepo.findAll().stream()
+            .map(Assignment::getId)
+            .toList();
         Assignment a = new Assignment();
-        a.setId(String.format("ASG-%03d", count + 1));
+        a.setId(String.format("ASG-%03d",
+            idSequence.next("assignments", issuedIds, "ASG-", 1)));
         a.setTaskId(taskId);
         a.setTaskTitle(task.getTitle());
         a.setDeveloperId(devId);
