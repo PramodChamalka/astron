@@ -1,15 +1,4 @@
-"""
-ASTRON - MCDM (Multi-Criteria Decision Making) developer ranking
-==================================================================
-Given a task's required skills and a list of developers, this scores
-each developer on several criteria (skills, workload, experience) and
-returns the best 3 - with a "burnout penalty" so we don't keep piling
-more work onto developers who are already overloaded.
-"""
-
-
 def score_developer(dev, required_skills):
-    """Score one developer against a task's required skills."""
 
     # Turn the lists into sets so we can easily compare them.
     req = set(required_skills or [])
@@ -17,19 +6,8 @@ def score_developer(dev, required_skills):
     matched = req & have      # skills the task needs AND the dev has
     missing = req - have      # skills the task needs but the dev lacks
 
-    # -----------------------------------------------------------------
-    # 1. Skill score: what % of the required skills does this dev have?
-    # If the task doesn't list any required skills, just give a neutral
-    # 50 so this criteria doesn't unfairly help or hurt anyone.
-    # -----------------------------------------------------------------
     skill_score = (len(matched) / len(req) * 100) if req else 50
 
-    # -----------------------------------------------------------------
-    # 2. Workload score, with a BURNOUT PENALTY.
-    # Start with "free capacity" (100 - workload%), then punish
-    # developers who are already very busy, so the algorithm avoids
-    # recommending someone who is close to burning out.
-    # -----------------------------------------------------------------
     wl = dev.get("workload_percent", 0)
     workload_score = 100 - wl
     penalty = False
@@ -40,17 +18,9 @@ def score_developer(dev, required_skills):
         workload_score *= 0.7      # moderate penalty - getting busy
         penalty = True
 
-    # -----------------------------------------------------------------
-    # 3. Experience score: more completed tasks = more experience.
-    # Capped at 100 so someone with 1000 tasks doesn't break the scale.
-    # -----------------------------------------------------------------
     experience_score = min(100, dev.get("completed_tasks", 0) * 1.5)
 
-    # -----------------------------------------------------------------
-    # 4. Combine everything into one weighted total.
-    # Skills matter most (40%), then workload/burnout (35%), then
-    # experience (25%). These weights add up to 100%.
-    # -----------------------------------------------------------------
+
     total = (skill_score * 0.40
            + workload_score * 0.35
            + experience_score * 0.25)

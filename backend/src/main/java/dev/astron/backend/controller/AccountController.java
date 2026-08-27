@@ -14,13 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// Self-service account management: a logged-in user's OWN profile and
-// password. Deliberately NOT under /api/users/** - SecurityConfig
-// locks that whole path to Admin only, and this needs to work for
-// every role. Every method here resolves its target from the JWT's
-// "sub" claim (the caller's own email, via Authentication.getName())
-// and NEVER from a client-supplied id, so there is no path by which
-// one account can edit another's record.
 @RestController
 @RequestMapping("/api/account")
 public class AccountController {
@@ -30,11 +23,6 @@ public class AccountController {
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    // PUT /api/account/profile - update the CALLER's own name, and (if
-    // this account is linked to a Developer record by email) their
-    // skills and job-title text too. User.name and Developer.name are
-    // two separate fields in two separate collections - kept in sync
-    // here so the dashboard greeting and the sidebar never disagree.
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(
             Authentication authentication,
@@ -56,10 +44,7 @@ public class AccountController {
         user.setName(name);
         userRepo.save(user);
 
-        // Skills/role-title only mean anything for an account that IS
-        // a developer. No linked Developer record just means these
-        // fields are silently no-ops - the frontend won't show them
-        // to non-developer accounts in the first place.
+
         Developer dev = devRepo.findByEmail(authentication.getName());
         if (dev != null) {
             dev.setName(name);
@@ -88,10 +73,7 @@ public class AccountController {
         return ResponseEntity.ok(Map.of("success", true, "data", data));
     }
 
-    // PUT /api/account/password - change the CALLER's own password.
-    // Verifies the current password before setting the new one, so
-    // a stolen/left-open session can't silently take over the account
-    // even though the request itself is already authenticated.
+
     @PutMapping("/password")
     public ResponseEntity<?> changePassword(
             Authentication authentication,

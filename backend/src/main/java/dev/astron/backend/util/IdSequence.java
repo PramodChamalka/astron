@@ -7,24 +7,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Hands out the next number in an id series like TASK-101 or ASG-001.
- *
- * WHY THIS EXISTS: ids used to be generated from a document COUNT, e.g.
- * "TASK-" + (101 + taskRepo.count()). That reuses ids after a delete -
- * delete TASK-103 and the next task created becomes TASK-103 again. Any
- * assignment or audit record still naming the old TASK-103 would then
- * silently attach itself to a completely different task.
- *
- * Taking "the highest id that currently exists, plus one" is NOT enough
- * on its own: delete the HIGHEST task and that maximum drops back, so
- * the id is reused anyway. The high-water mark therefore lives in its
- * own counters collection, which only ever moves up.
- *
- * The existing documents are still consulted as a FLOOR, so a database
- * that already contains TASK-104 (created before this class existed)
- * can never be handed TASK-104 again.
- */
 @Component
 public class IdSequence {
 
