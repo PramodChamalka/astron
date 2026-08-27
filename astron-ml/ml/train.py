@@ -23,7 +23,6 @@ from sklearn.preprocessing import LabelEncoder
 DATA_PATH = "data/Sip-task-info.csv"
 ARTIFACTS_DIR = "ml/artifacts"
 
-# The 5 inputs the model is allowed to use to make a prediction.
 FEATURE_COLUMNS = ["HoursEstimate", "Priority", "Category", "SubCategory", "ProjectCode"]
 
 TEXT_COLUMNS = ["Category", "SubCategory", "ProjectCode"]
@@ -58,20 +57,11 @@ def main():
     )
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
-    # MAE (Mean Absolute Error): on average, how many hours off is the
-    # model's prediction? Lower is better.
+    
     mae = mean_absolute_error(y_test, y_pred)
-
-    # RMSE (Root Mean Squared Error): similar to MAE, but punishes big
-    # mistakes more heavily. Lower is better.
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-
-    # R-squared: how much of the variation in HoursActual is explained
-    # by the model. 1.0 = perfect, 0.0 = no better than guessing the average.
     r2 = r2_score(y_test, y_pred)
-
-    # "Within 20%" accuracy: for how many tasks was the prediction within
-    # 20% of the true value? This is an easy-to-understand accuracy measure.
+    
     percent_error = np.abs(y_pred - y_test) / y_test
     within_20_percent = (percent_error <= 0.20).mean() * 100
 
@@ -81,24 +71,13 @@ def main():
     print(f"R^2:  {r2:.3f}")
     print(f"Within 20% of true value: {within_20_percent:.1f}%")
 
-    # -----------------------------------------------------------------
-    # Step 9: Compare against the human baseline (KEY THESIS RESULT)
-    # -----------------------------------------------------------------
-
     human_mae = mean_absolute_error(y_test, X_test["HoursEstimate"])
-
-    # % improvement = how much smaller the model's error is than the
-    # human's error, as a percentage of the human's error.
     improvement_over_human_percent = ((human_mae - mae) / human_mae) * 100
 
-    print("\n--- Model vs Human baseline (key thesis result) ---")
+    print("\n--- Model vs Human baseline ---")
     print(f"Model MAE:            {mae:.2f} hours")
     print(f"Human estimate MAE:   {human_mae:.2f} hours")
     print(f"Improvement over human: {improvement_over_human_percent:.1f}%")
-
-    # -----------------------------------------------------------------
-    # Step 10: Feature importance
-    # -----------------------------------------------------------------
 
     importance_percentages = model.feature_importances_ * 100
     feature_importance = dict(
@@ -111,16 +90,10 @@ def main():
     ):
         print(f"{feature}: {importance:.1f}%")
 
-    # -----------------------------------------------------------------
-    # Step 11: Save the model, encoders, and feature names to disk
-
     joblib.dump(model, f"{ARTIFACTS_DIR}/rf_model.pkl")
     joblib.dump(encoders, f"{ARTIFACTS_DIR}/encoders.pkl")
     joblib.dump(FEATURE_COLUMNS, f"{ARTIFACTS_DIR}/feature_names.pkl")
 
-    # -----------------------------------------------------------------
-    # Step 12: Save an evaluation.json summary of everything above
-    # -----------------------------------------------------------------
     evaluation = {
         "mae": float(mae),
         "rmse": float(rmse),

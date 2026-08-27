@@ -7,7 +7,6 @@ import java.util.List;
 
 public interface TaskRepository extends MongoRepository<Task, String> {
 
-    // Spring builds these queries from the method names
     List<Task> findByAssignedTo(String developerId);
     List<Task> findByStatus(String status);
 

@@ -21,8 +21,6 @@ public class Project {
     private String description;   // optional
     private String deadline;      // optional
 
-    // MongoDB stores snake_case, Java uses camelCase - @Field maps the
-    // DB field and @JsonProperty maps the JSON output. Both are needed.
     @Field("created_at")
     @JsonProperty("created_at")
     private String createdAt;

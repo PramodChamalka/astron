@@ -42,8 +42,6 @@ public class DashboardController {
             .filter(t -> !"Completed".equals(t.getStatus()))
             .count();
 
-        // Awaiting a HITL decision = created, but nobody has been
-        // assigned to it yet.
         long pendingHitl = tasks.stream()
             .filter(t -> t.getAssignedTo() == null && !"Completed".equals(t.getStatus()))
             .count();
@@ -52,9 +50,6 @@ public class DashboardController {
             .filter(d -> "high_load".equals(d.getAvailability()))
             .count();
 
-        // "RF accuracy" here = the average real-world accuracy of our
-        // developers' completed work (from TaskController's recompute),
-        // since that is the real number this service has access to.
         double rfAccuracy = devs.stream()
             .filter(d -> d.getCompletedTasks() > 0)
             .mapToDouble(Developer::getAvgAccuracy)

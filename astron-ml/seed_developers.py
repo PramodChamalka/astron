@@ -11,12 +11,9 @@ client = MongoClient(
 db = client.get_database("astron")
 developers = db["developers"]
 
-# clear any old data first
 developers.delete_many({})
 print("Cleared old developers")
 
-# give each developer a DIFFERENT workload so we can see
-# the burnout penalty working in the MCDM ranking
 data = [
   {
     "id": "dev-001", "name": "Grace Hopper", "initials": "GH",
@@ -63,6 +60,5 @@ data = [
 developers.insert_many(data)
 print(f"Inserted {len(data)} developers")
 
-# show what's now in the database
 for d in developers.find({}, {"_id": 0, "name": 1, "workload_percent": 1}):
     print(f"  {d['name']} - workload {d['workload_percent']}%")

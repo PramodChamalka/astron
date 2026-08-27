@@ -34,16 +34,11 @@ tasks = db["tasks"]
 assignments = db["assignments"]
 developers = db["developers"]
 
-# The constant every task from the broken path came out at. Defined here
-# rather than hard-coding task ids, so the script explains its own
-# selection rule instead of relying on a list someone has to trust.
 BUGGY_CONSTANT = 9.7
-
 
 def main():
     # -----------------------------------------------------------------
-    # Step 1: Find the affected tasks and show them BEFORE touching
-    # anything, so the deletion is never a surprise.
+    # Step 1: Find affected tasks
     # -----------------------------------------------------------------
     doomed = list(tasks.find({"predicted_hours": BUGGY_CONSTANT}, {"_id": 0}))
 
@@ -78,10 +73,7 @@ def main():
     print(f"\nDeleted {deleted_tasks} tasks and {deleted_assignments} assignments")
 
     # -----------------------------------------------------------------
-    # Step 3: Rebuild each affected developer's counters from the tasks
-    # that ACTUALLY remain, using the same formula the Spring backend
-    # uses (TaskController.updateDeveloperStats): 20% per active task,
-    # capped at 100, with matching availability thresholds.
+    # Step 3: Rebuild developer counters
     # -----------------------------------------------------------------
     for dev_id in affected_devs:
         active = tasks.count_documents({
@@ -105,7 +97,7 @@ def main():
               f"workload={workload}%, {availability}")
 
     # -----------------------------------------------------------------
-    # Step 4: Show what survived, so the result is verifiable at a glance.
+    # Step 4: Show what survived
     # -----------------------------------------------------------------
     print("\nRemaining tasks:")
     for t in tasks.find({}, {"_id": 0}).sort("id", 1):

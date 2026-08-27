@@ -15,11 +15,10 @@ def compute_complexity(hours_estimate, priority_numeric):
         priority = float(priority_numeric)
     except (TypeError, ValueError):
         priority = 0.0
-    # Negative hours would be nonsense, so clamp at 0.
     hours = max(0.0, hours)
     priority = max(0.0, priority)
     score = hours + (priority * PRIORITY_WEIGHT)
-    # Walk the bands in order and take the first one the score fits in.
+
     level = HIGHEST_BAND
     for upper_bound, band_name in COMPLEXITY_BANDS:
         if score < upper_bound:

@@ -83,8 +83,6 @@ public class AssignmentController {
         a.setDeveloperId(devId);
         a.setDeveloperName(dev.getName());
         a.setDeveloperInitials(dev.getInitials());
-        // getOrDefault falls back to a sensible value if the frontend
-        // didn't explicitly send hitl_decision / assignment_type.
         a.setHitlDecision((String) body.getOrDefault(
             "hitl_decision", "AI Approved"));
         a.setAssignmentType((String) body.getOrDefault(

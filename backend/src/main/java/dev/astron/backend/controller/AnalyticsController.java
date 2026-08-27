@@ -33,22 +33,8 @@ public class AnalyticsController {
 
     private final RestClient restClient = RestClient.create();
 
-    // n_estimators is a fixed training hyperparameter (ml/train.py),
-    // not a data-derived metric like MAE or feature_importance - it
-    // can't silently drift on retrain the way those can, since it's
-    // set by the training code itself rather than measured from data.
-    // There's also no standalone Flask endpoint that reports it (it's
-    // only echoed back per-prediction in ml/predict.py), so unlike
-    // training_samples/feature_importance below, there's no live
-    // "model metadata" source to defer to here.
     private static final int ESTIMATOR_TREES = 200;
 
-    // GET /api/analytics/predictions?task_id=TASK-101
-    // Returns the REAL stored prediction for one task, plus the REAL
-    // model-wide training_samples/feature_importance pulled live from
-    // Flask's /api/model-evaluation (which itself reads
-    // ml/artifacts/evaluation.json) - not hardcoded constants that
-    // would silently go stale the next time the model is retrained.
     @GetMapping("/predictions")
     public ResponseEntity<?> getPrediction(
             @RequestParam("task_id") String taskId,
@@ -74,9 +60,6 @@ public class AnalyticsController {
             data.put("training_samples", evaluation.get("training_samples"));
             data.put("feature_importance", evaluation.get("feature_importance"));
         } else {
-            // Flask is unreachable or returned something unusable - say
-            // so explicitly rather than silently falling back to old
-            // hardcoded numbers that may no longer match the real model.
             data.put("training_samples", null);
             data.put("feature_importance", null);
             data.put("model_metadata_stale", true);
@@ -87,12 +70,6 @@ public class AnalyticsController {
         return ResponseEntity.ok(Map.of("success", true, "data", data));
     }
 
-    // Calls the SAME endpoint the frontend already trusts directly
-    // (see api.js getModelEvaluation) - forwards the caller's own JWT,
-    // since Flask's token_required only checks the signature against
-    // the same shared secret (see JwtUtil), not who the user is.
-    // Returns null on any failure so the caller can label the response
-    // as stale instead of guessing at a fallback value.
     @SuppressWarnings("unchecked")
     private Map<String,Object> fetchModelEvaluation(String authorization) {
         try {

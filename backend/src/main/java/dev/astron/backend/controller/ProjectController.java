@@ -69,10 +69,6 @@ public class ProjectController {
         return ResponseEntity.ok(Map.of("success", true, "data", saved));
     }
 
-    // JwtAuthFilter puts the token's "sub" claim - the user's EMAIL - in
-    // as the principal, but we want to store the user id ("usr-001"), so
-    // look the user up. If they can't be found we fall back to whatever
-    // the principal was, rather than storing nothing at all.
     private String currentUserId(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             return null;
