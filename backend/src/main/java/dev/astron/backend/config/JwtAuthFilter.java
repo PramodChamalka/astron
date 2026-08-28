@@ -16,8 +16,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-// OncePerRequestFilter guarantees this code runs exactly once per
-// incoming request, before it reaches our @RestController methods.
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -64,18 +62,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(
                         claims.get("sub"), null, authorities);
 
-                // Registering this Authentication is what makes Spring
-                // Security treat the rest of this request as "logged in".
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
-                // 6. Missing/expired/invalid token - do nothing here.
-                // We simply continue without authenticating; it's up to
-                // SecurityConfig's rules to decide if that's allowed
-                // (e.g. a public endpoint) or rejected (401/403).
             }
         }
 
-        // Always let the request continue to the next filter/controller.
         filterChain.doFilter(request, response);
     }
 }

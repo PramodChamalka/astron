@@ -14,8 +14,6 @@ public class DataSeeder implements CommandLineRunner {
 
     @Autowired private UserRepository userRepo;
 
-    // Runs once when the app starts. Creates the bootstrap admin,
-    // because nobody exists yet to approve the first account.
     @Override
     public void run(String... args) {
         if (userRepo.count() > 0) {

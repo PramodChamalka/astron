@@ -83,13 +83,6 @@ public class DeveloperController {
         return ResponseEntity.ok(Map.of("success", true, "data", saved));
     }
 
-    // GET /api/developers/me - the logged-in developer's OWN profile.
-    // Same email -> Developer resolution as TaskController's /tasks/my:
-    // JwtAuthFilter puts the token's "sub" claim (the user's EMAIL) in
-    // as the principal, and Developer records aren't linked to User
-    // accounts by id anywhere in this app, so email is the only field
-    // they share. No match just means this account isn't linked to a
-    // seeded developer record - a real gap, not something to guess at.
     @GetMapping("/me")
     public ResponseEntity<?> getMe(Authentication authentication) {
         Developer dev = repo.findByEmail(authentication.getName());

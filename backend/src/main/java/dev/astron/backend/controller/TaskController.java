@@ -31,13 +31,6 @@ public class TaskController {
     }
 
     // GET /api/tasks/my - tasks assigned to the logged-in developer
-    // JwtAuthFilter puts the token's "sub" claim (the user's EMAIL) in as
-    // the principal, same as ProjectController's currentUserId. Developer
-    // records aren't linked to User accounts by id anywhere in this app -
-    // the only field they share is email, so that's what we match on.
-    // No matching Developer (e.g. an Admin/Manager account, or a Developer
-    // whose email doesn't line up with a seeded Developer record) just
-    // means no assigned tasks, not an error.
     @GetMapping("/my")
     public Map<String,Object> getMyTasks(Authentication authentication) {
         Developer dev = devRepo.findByEmail(authentication.getName());
@@ -53,8 +46,6 @@ public class TaskController {
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Task body) {
 
-        // @RequestBody already turned the incoming JSON into a Task
-        // object for us. We just need to make sure it has a title.
         if (body.getTitle() == null || body.getTitle().isBlank()) {
             return ResponseEntity.status(400).body(Map.of(
                 "success", false, "error", "Title is required"));
@@ -95,8 +86,6 @@ public class TaskController {
         body.setCompletedAt(null);
         body.setCreatedAt(LocalDateTime.now().toString());
 
-        // save() inserts the document into MongoDB and returns the
-        // saved copy (now including its generated mongoId).
         Task saved = taskRepo.save(body);
         return ResponseEntity.ok(Map.of("success", true, "data", saved));
     }
@@ -110,11 +99,7 @@ public class TaskController {
     // ============================================================
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(
-            // @PathVariable pulls "TASK-101" out of the URL itself,
-            // e.g. PUT /api/tasks/TASK-101/status
             @PathVariable String id,
-            // @RequestBody here is just a generic Map, since we only
-            // care about reading one field ("status") out of the JSON.
             @RequestBody Map<String,Object> body) {
 
         // findByTaskId looks up our own "id" field (like "TASK-101"),

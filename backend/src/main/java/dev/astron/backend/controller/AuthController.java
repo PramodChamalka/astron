@@ -39,8 +39,6 @@ public class AuthController {
 
         User user = userRepo.findByEmail(email);
 
-        // Same message for wrong email and wrong password, so an
-        // attacker cannot discover which emails exist.
         if (user == null || !encoder.matches(password, user.getPassword())) {
             return ResponseEntity.status(401).body(Map.of(
                 "success", false, "error", "Invalid email or password"));
@@ -97,8 +95,6 @@ public class AuthController {
         u.setEmail(email);
         u.setPassword(encoder.encode(password));   // hashed, never plain
 
-        // NOTE: role is NOT taken from the request. Anyone could send
-        // "Admin" otherwise. Admin assigns the real role on approval.
         u.setRole("Developer");
         u.setStatus("pending");
         u.setInitials(makeInitials(name));

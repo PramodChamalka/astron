@@ -23,8 +23,6 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Creates a token that BOTH Spring Boot and Flask can validate,
-    // because they share the same secret and both use HS256.
     public String generateToken(String email, String role, String userId) {
         return Jwts.builder()
             .subject(email)
